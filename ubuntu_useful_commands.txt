@@ -1,0 +1,189 @@
+#############################
+###Helpful Ubuntu Command ###
+#############################
+
+
+
+#search word in multiple pdf files using pdfgrep
+pdfgrep 'Gaussian' *.pdf
+
+# echo alias to bash
+echo "alias python='python3.6'">> ~/.bashrc  & source ~/.bashrc
+
+#create video from images
+ffmpeg -framerate 25 -i image-%05d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p output.mp4
+
+##convert images into video
+ffmpeg -framerate 15 -start_number 1030 -i %06d.jpg -c:v libx264 -b:v 2M output.mp4
+
+############# GPU Fan Speed ############
+sudo nvidia-xconfig --enable-all-gpus
+sudo nvidia-xconfig --cool-bits=4
+restart or logout
+
+#################DOCKER###################
+#view all docker container
+docker ps -a
+#view running container
+docker ps
+
+#Run the docker container
+docker start inspiring_wright
+
+#Execute the docker with user id
+docker exec -it inspiring_wright bash
+
+#Free up tcp port
+fuser -k 6006/tcp
+
+# check port number is used
+sudo netstat -tulpn | grep :7007
+sudo netstat -tulpn | grep LISTEN
+
+
+# PBS job scheduler
+Step 1: Schedule a pbs job
+stunb@dgx:~/scratch$ nano test.sh
+#!/bin/sh
+#PBS -l select=1:ncpus=5:ngpus=2:host=dgx
+#PBS -N test
+#PBS -l software=nvidia-docker-images
+#PBS -l walltime=24:00:00
+Step 2: Run the job
+stunb@dgx:~/scratch$ qsub -I test.sh
+qsub: waiting for job 19.dgx-pbsa to start
+qsub: job 19.dgx-pbsa ready
+
+Alternatively use the command directly:
+qsub -I -l select=1:ncpus=1:ngpus=1:host=dgx05 -N bhujeln1 -l software=nvidia-docker-images -l walltime=12:00:00
+
+Step 3: Run DGX docker with mounting data directory
+$ nvidia-docker run -it --rm --name niraj --gpus all --ipc=host --shm-size=16g -v /home/niraj:/workspace nvcr.io/nvidia/pytorch:22.01-py3
+
+# Run docker with port forwarding 
+$ nvidia-docker run -it --ipc=host -p 8888-8899:8888-8899 --name dsacstar -v /home/niraj:/workspace nvcr.io/nvidia/pytorch:22.04-py3
+
+#Once exited from the docker, the container can be restarted again with the command
+$ docker start -i stunb
+#To remove the container
+$ nvidia-docker rm stunb
+
+#start/stop lightdm
+~ sudo service lightdm start
+
+##################################3
+###Mount Remote Directory####
+1. First, create a directory in local host to mount the remote directory
+~$ mkdir /mnt/niraj
+2. Mount the remote directory to local folder using sshfs
+~$ sshfs -p 33 niraj@10.10.10.10:/home/niraj /mnt/niraj
+3. To troubleshoot, kill all the sshfs process, don't use sudo to sshfs.
+
+# Mount remote Linux to Windows
+net use Z: \\sshfs\niraj@10.10.10.10\Desktop\ /persistent:yes
+
+# Mount remote Linux to Window using SSH Keys
+net use Z: \\sshfs.k\niraj@10.10.10.10
+
+# mount samba share
+sudo mount -t cifs -o "domain=abc,username=xyz,password=******,vers=3.0" remote_samba_share /mnt/local_share/
+
+# mount remote linxu folder
+sshfs -o reconnect,ServerAliveInterval=60,ServerAliveCountMax=10 niraj@10.10.10.10:/home/niraj /mnt/niraj/
+
+# mount with port number, nonempty is default behavior in new version
+sshfs -o port=32900 niraj@10.10.10.10:/home/niraj /mnt/niraj/
+
+# mount overwrite
+sshfs -o allow_other niraj@10.10.10.10:/home/niraj /mnt/niraj/
+
+if fuse: bad mount point;
+sudo chmod 777 /mnt/dl-asoro
+if Transport endpoint is not connected: fusermount -uz /mnt/dl-asoro
+killall sshfs
+
+##### Mirror a directory tree, local computer to remote computer, rsync
+# Mirror means to copy only files that have changed or are new. We use rsync for this but without running rsyncd permanently. We just tunnel the data over a ssh connection.
+$ rsync -avHz -e ssh /source/mydirectory user@remotehost:/where/this/should/go
+
+######## Adjust GPU Fan on Nvidia Headless ########
+(NOT Working currently due to different nvidia-settings and headless nvidia driver version)
+nvidia-settings -q fans
+nvidia-settings --display :1.0 -a [gpu:0]/GPUFanControlState=1 -a [fan:0]/GPUTargetFanSpeed=55
+nvidia-settings -a [gpu:1]/GPUFanControlState=1 -a [fan:1]/GPUTargetFanSpeed=55
+
+
+## Kill Multiprocessing python process ######
+kill -9 `ps -ef | grep train.py | grep -v grep | awk '{print $2}'`
+
+########### Conda ###########
+# crreate env
+conda create -n myenv python=3.8
+# remove env
+conda env remove -n ENV_NAME
+# deactivate conda init
+conda config --set auto_activate_base false
+# isolate .lcoal from conda env
+conda env config vars set PYTHONNOUSERSITE=1 -n my_environment
+
+# Adding a environment to jupyter notebook
+$ conda activate menv # Active the conda or virtual environment you want to add
+$ pip install ipykernel
+$ python -m ipykernel install --user --name=myenv
+The new environment should now appear as an option to launch. You may have to reload 
+the page before it appears.
+
+
+## create a new session
+tmux new -s niraj
+
+## tensorboard port number on 10.2.56.220
+tensorboard --logdir logs/cocostuff27/ --bind_all --port 50100
+
+# List all folder size inside a directory
+du -chd 1 | sort -h
+du -shc ./datasets/* | sort -h
+
+# spyder matplotlib auto problem
+pip install opencv-python==4.3.0.36
+
+
+# pbs interactive job
+qsub -I -l select=1:ncpus=1:ngpus=1:mem=128g -l walltime=01:00:00 -P personal-bhujeln1 -q normal
+exit # exit from interacitve mode
+
+# running jupyter remotely
+jupyter notebook --no-browser --port=50100
+# running jupyter on remote docker
+jupyter notebook --ip 0.0.0.0 --port 8888 --allow-root
+
+# setup port forwarding for jupyter
+ssh -L 50100:localhost:50100 niraj@10.10.10.10
+# Go to http://localhost:50100 on the local browser 
+
+# remove nvidia drivers completely
+sudo apt remove --purge '^nvidia-.*'
+sudo apt install ubuntu-desktop
+sudo rm /etc/X11/xorg.conf
+echo 'nouveau' | sudo tee -a /etc/modules
+
+# New GUI app/window won't open -> anaconda is stopping to load gtk and other libraries 
+sudo ldconfig /lib/x86_64-linux-gnu/
+export LD_LIBRARY_PATH=/home/niraj/miniconda3/lib/
+
+# Spyder matplotlib auto fails 
+pip uninstall opencv-python
+pip install opencv-python-headless
+
+# installing diffuse
+1. Download the diffuse package from https://sourceforge.net/projects/diffuse/, extract the diffuse-0.4.8.tar.bz2 by right-clicking the file
+2. Install libpango - sudo aptitude install libpango-1.0-0
+3. Change directory to the diffuse folder and Run diffuse from the extracted folder
+$ cd ~/Downloads/diffuse-0.4.8
+$ src/usr/bin/diffuse
+
+
+# S3CMD
+$ s3cmd ls s3://sciml-epac-incoming
+$ s3cmd info s3://sciml-epac-incoming
+
